@@ -1,0 +1,17 @@
+# Libraries and downloads: never committed
+data/
+LastbookData/
+*.zip
+*.zim
+*.partial
+
+# Python and Nix
+__pycache__/
+*.pyc
+.venv/
+result
+result-*
+
+# Local notes
+PLAN.md
+.direnv/
