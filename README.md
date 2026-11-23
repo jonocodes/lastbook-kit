@@ -2,7 +2,7 @@
 
 An unofficial toolkit for technical users of [Lastbook](https://github.com/Immortal-Protocols/lastbook)'s offline survival library: get a library, check it, and serve it to a browser, without the desktop app, the installers or a local AI.
 
-**Status: early.** `lbx fetch` gets a library and `lbx serve` serves it. Checking a library is next. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
+**Status: early.** `lbx fetch` gets a library, `lbx check` checks it and `lbx serve` serves it. Overlays for the server are next. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
 
 > Not affiliated with Lastbook. Problems with Lastbook's own code or libraries belong [upstream](https://github.com/Immortal-Protocols/lastbook/issues).
 
@@ -54,6 +54,12 @@ The `github:` form doesn't work, because it leaves out the `upstream/` submodule
 - **`--zip PATH`** uses a zip you got some other way: a torrent, a friend or a drive. It's matched to the manifest by size and checked by SHA-256. Give a manifest file with `--manifest` when offline.
 - **`--dest DIR`** puts `LastbookData/` in `DIR`. The default is `<data home>/<pack>/`, where the data home is `$LASTBOOK_KIT_DATA`, else `~/.local/share/lastbook-kit`.
 - **`--download-only`** and **`--keep-zip`** keep the zip, for passing on.
+
+### Checking a library
+
+`lbx check [DATA]` checks every file against the library's own `pack-manifest.tsv`: size and SHA-256, or sizes only with `--quick`. It exits 1 if anything is missing or changed, so it can run in scripts. It's useful after copying a library to a drive or getting one from someone else. The full check of Small takes seconds.
+
+Files the server writes while it runs (`derived/cache/`, `derived/geo/tilecache/`, `derived/index/`) are ignored. Other files that aren't in the pack are listed, but they aren't an error. `lbx fetch` runs the quick check before it switches a new library in.
 
 ### Serving
 

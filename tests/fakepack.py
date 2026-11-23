@@ -21,7 +21,8 @@ FILES = {
 
 def make_library(parent: Path, files=None) -> Path:
     """<parent>/LastbookData with pack.json and pack-manifest.tsv, as a real library has."""
-    files = FILES if files is None else files
+    files = dict(FILES if files is None else files)
+    files.setdefault('pack.json', json.dumps({'name': 'small', 'counts': {}}).encode())
     lib = parent / 'LastbookData'
     rows = ['path\tbytes\tsha256\thow\tchanges']
     for rel, data in sorted(files.items()):
@@ -29,8 +30,7 @@ def make_library(parent: Path, files=None) -> Path:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
         rows.append(f'{rel}\t{len(data)}\t{hashlib.sha256(data).hexdigest()}\tclone\t')
-    (lib / 'pack-manifest.tsv').write_text('\n'.join(rows) + '\n', encoding='utf-8')
-    (lib / 'pack.json').write_text(json.dumps({'name': 'small', 'counts': {}}), encoding='utf-8')
+    (lib / 'pack-manifest.tsv').write_text('\n'.join(rows) + '\n', encoding='utf-8')   # lists everything but itself
     return lib
 
 
