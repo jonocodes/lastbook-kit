@@ -66,6 +66,16 @@ Upstream's Docker image (PR `#33`) was estimated at about 100 MB compressed and 
 - **`server.py --lan`.** The browser version of the app, documented in `docs/LIBRARY-SERVER.md`. It needs an access key (`?key=`) and refuses requests under a host name (a reverse proxy gets 403).
 - **Contribution rules** (`CONTRIBUTING.md`): no network except to the hosts on their approved list, no listening port in the app, plain words.
 
+## Running `server.py` from plain Python (2026-11-22)
+
+Upstream `v1.1.16` (`5aec1667`), unchanged, against Small, with Python 3.14 and a venv from `packaging/linux/requirements_linux.txt` (122 MB, wheels only). Write-up and commands are in issue #1.
+
+- **Everything works with no AI:** guides, search, the PDF reader, video with seeking (`206` ranges), encyclopedias, the map down to street level, and place search. Chat says the model is offline and lists the best pages.
+- **Host names get 403**, on every path. Only `localhost` and bare IPs are allowed.
+- **The data folder must be writable.** The server writes page images (`derived/cache/`), map tiles (`derived/geo/tilecache/`) and `derived/index/semantic.sqlite`. With a read-only folder it crashes at startup, even with `--no-index`. Writable `derived/` folders are enough. No shipped file is changed.
+- **`--lan`:** the key rules work as documented (403, then `?key=` sets a cookie). Setup, update and database files stay off-limits to other devices.
+- **NixOS:** the wheels need `libstdc++` and `zlib` on the library path.
+
 ## Survey of forks (2026-11-22)
 
 - **Forks:** 358. 13 had commits of their own on their main branch, mostly country versions (Spain, Germany, Netherlands, Brazil, Italy, Europe).
