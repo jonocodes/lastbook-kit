@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from lbx import paths
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -20,14 +22,11 @@ def run_lbx(*args, env=None, **kw):
 
 @pytest.fixture(scope='session')
 def small():
-    """The real Small library's data folder (LastbookData/), from LASTBOOK_KIT_DATA."""
-    base = os.environ.get('LASTBOOK_KIT_DATA')
-    if not base:
-        pytest.skip('LASTBOOK_KIT_DATA is not set: no Small library to test against')
-    for p in (Path(base) / 'small' / 'LastbookData', Path(base) / 'LastbookData', Path(base)):
-        if (p / 'library-data').is_dir():
-            return p
-    pytest.skip(f'no Small library under LASTBOOK_KIT_DATA ({base})')
+    """The real Small library's data folder: <data home>/small/LastbookData (see lbx.paths)."""
+    lib = paths.library('small')
+    if not (lib / 'library-data').is_dir():
+        pytest.skip(f'no Small library at {lib}. Get it with: lbx fetch small')
+    return lib
 
 
 def free_port():

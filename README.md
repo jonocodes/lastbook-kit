@@ -2,7 +2,7 @@
 
 An unofficial toolkit for technical users of [Lastbook](https://github.com/Immortal-Protocols/lastbook)'s offline survival library: get a library, check it, and serve it to a browser, without the desktop app, the installers or a local AI.
 
-**Status: early.** `lbx serve` runs upstream's server on a library. Fetching and checking are next. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
+**Status: early.** `lbx fetch` gets a library and `lbx serve` serves it. Checking a library is next. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
 
 > Not affiliated with Lastbook. Problems with Lastbook's own code or libraries belong [upstream](https://github.com/Immortal-Protocols/lastbook/issues).
 
@@ -25,14 +25,13 @@ lastbook-kit keeps Lastbook's data exactly as it's published and swaps the deliv
 
 ## Use it
 
-You need a library: a `LastbookData/` folder unpacked from one of the zips below.
-
 **With uv** (Linux, macOS, Windows; Python 3.12 to 3.14):
 
 ```sh
 git clone --recurse-submodules https://github.com/jonocodes/lastbook-kit.git
 cd lastbook-kit
-uv run lbx serve path/to/LastbookData      # http://127.0.0.1:8890/
+uv run lbx fetch small      # download (7.7 GB), check and unpack the Small library
+uv run lbx serve            # serve it at http://127.0.0.1:8890/
 ```
 
 `uv run` installs everything on first use. On NixOS, use the dev shell below, which puts the libraries the PyPI wheels expect on the library path.
@@ -40,21 +39,39 @@ uv run lbx serve path/to/LastbookData      # http://127.0.0.1:8890/
 **With Nix** (Linux x86_64 and aarch64):
 
 ```sh
-nix run 'git+https://github.com/jonocodes/lastbook-kit?submodules=1' -- serve path/to/LastbookData
+nix run 'git+https://github.com/jonocodes/lastbook-kit?submodules=1' -- fetch small
+nix run 'git+https://github.com/jonocodes/lastbook-kit?submodules=1' -- serve
 nix develop      # or `direnv allow`: Python, uv and just, for working on lastbook-kit
 ```
 
-`lbx serve --lan` also serves other devices on the network. They need the access link it prints. The data folder has to be writable, because the server keeps its page images and map tiles in `derived/`.
+The `github:` form doesn't work, because it leaves out the `upstream/` submodule.
+
+### Getting a library
+
+`lbx fetch small|medium|all` reads Lastbook's [manifest](https://downloads.lastbook.org/manifest-v1.json) and downloads the pack's zip. It checks the size and SHA-256, unpacks the zip beside any existing library, and switches it in with a rename. The library it replaces is kept as `LastbookData.old-<time>`.
+
+- **Stopped downloads resume.** Run the same command again. A dropped connection is retried on its own.
+- **`--zip PATH`** uses a zip you got some other way: a torrent, a friend or a drive. It's matched to the manifest by size and checked by SHA-256. Give a manifest file with `--manifest` when offline.
+- **`--dest DIR`** puts `LastbookData/` in `DIR`. The default is `<data home>/<pack>/`, where the data home is `$LASTBOOK_KIT_DATA`, else `~/.local/share/lastbook-kit`.
+- **`--download-only`** and **`--keep-zip`** keep the zip, for passing on.
+
+### Serving
+
+`lbx serve [DATA]` runs upstream's server on a data folder. The default is the Small library in the data home.
+
+- `--lan` also serves other devices on the network. They need the access link it prints.
+- The data folder has to be writable, because the server keeps its page images and map tiles in `derived/`.
 
 ### Development
 
 ```sh
-just test        # all tests. The Small-library ones skip unless Small is unpacked
+just test        # all tests. The Small-library ones skip unless Small is in the data home
 just test-fast   # only the tests that need no library
-just serve       # serve the Small library from LASTBOOK_KIT_DATA
+just fetch       # get the Small library into the data home
+just serve       # serve it
 ```
 
-Tests find the Small library in `$LASTBOOK_KIT_DATA/small/LastbookData`. `LASTBOOK_KIT_DATA` defaults to `~/.cache/lastbook-kit`.
+Fetch and check are tested against a tiny library on a local server, so those tests need no network.
 
 ## How it works
 
@@ -63,6 +80,7 @@ lastbook-kit doesn't rewrite anything. It pins an exact Lastbook commit and runs
 ```
 upstream/        Lastbook at a pinned commit
 lbx/fetch.py     get a library from Lastbook's manifest, check its SHA-256, unpack it
+lbx/manifest.py  read Lastbook's manifest-v1.json
 lbx/check.py     check a data folder against its pack-manifest.tsv
 lbx/serve.py     start upstream server.py with lastbook-kit's defaults
 lbx/overlay/     small patches where upstream's defaults get in the way

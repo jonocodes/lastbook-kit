@@ -26,6 +26,11 @@
 
       pythonFor = pkgs: pkgs.python313;
 
+      # A github: flake ref is a tarball without submodules. Say so instead of failing in the tests.
+      upstream =
+        if builtins.pathExists ./upstream/server.py then ./upstream
+        else throw "lastbook-kit: upstream/ is empty. Use 'git+https://github.com/jonocodes/lastbook-kit?submodules=1', not 'github:'.";
+
       libzimFor = pkgs:
         let py = pythonFor pkgs; in
         py.pkgs.buildPythonPackage {
@@ -58,9 +63,9 @@
               py.pkgs.pypdfium2
             ];
             # Upstream's program files, read only. Data folders are always outside the store.
-            makeWrapperArgs = [ "--set-default" "LBX_UPSTREAM" "${./upstream}" ];
+            makeWrapperArgs = [ "--set-default" "LBX_UPSTREAM" "${upstream}" ];
             nativeCheckInputs = [ py.pkgs.pytestCheckHook ];
-            preCheck = "export LBX_UPSTREAM=${./upstream}";
+            preCheck = "export LBX_UPSTREAM=${upstream}";
             pythonImportsCheck = [ "lbx" ];
             meta = {
               description = "Get, check and serve Lastbook libraries without the desktop app";
