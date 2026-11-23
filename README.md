@@ -2,7 +2,7 @@
 
 An unofficial toolkit for technical users of [Lastbook](https://github.com/Immortal-Protocols/lastbook)'s offline survival library: get a library, check it, and serve it to a browser, without the desktop app, the installers or a local AI.
 
-**Status: early.** `lbx fetch` gets a library, `lbx check` checks it and `lbx serve` serves it. Overlays for the server are next. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
+**Status: early but working.** `lbx fetch` gets a library, `lbx check` checks it and `lbx serve` serves it. Work is tracked in [issues](https://github.com/jonocodes/lastbook-kit/issues), starting from the pinned [Roadmap](https://github.com/jonocodes/lastbook-kit/issues?q=is%3Aissue+label%3Aroadmap).
 
 > Not affiliated with Lastbook. Problems with Lastbook's own code or libraries belong [upstream](https://github.com/Immortal-Protocols/lastbook/issues).
 
@@ -63,10 +63,22 @@ Files the server writes while it runs (`derived/cache/`, `derived/geo/tilecache/
 
 ### Serving
 
-`lbx serve [DATA]` runs upstream's server on a data folder. The default is the Small library in the data home.
+`lbx serve [DATA]` runs upstream's server on a data folder. The default is the Small library in the data home. It differs from running upstream's `server.py` directly in a few ways, each a small overlay in `lbx/overlay/` that says why it exists:
 
-- `--lan` also serves other devices on the network. They need the access link it prints.
-- The data folder has to be writable, because the server keeps its page images and map tiles in `derived/`.
+- **The library stays as published.** Page images, map tiles, the search index and the access key go to a state folder, by default `~/.local/state/lastbook-kit/serve/<pack>-<hash>/`. A library can be on a read-only drive. `--state DIR` picks another place, and `--state DATA/derived` gives upstream's behaviour back.
+- **No setup or update API.** Libraries are managed with `lbx fetch`, and the server makes no requests of its own. There's no local AI, so Chat lists the best-matching pages.
+- **A request through a reverse proxy counts as another device.** It needs the access link like any other.
+
+Who can open it:
+
+| Option | Listens on | Other devices |
+|---|---|---|
+| (none) | `127.0.0.1` | none |
+| `--lan` | `0.0.0.0` | with the access link it prints |
+| `--bind ADDR` | `ADDR` | with the access link |
+| `--no-key` (with `--lan` or `--bind`) | | anyone who can reach this computer. Only on a network you trust |
+
+Upstream answers only to `localhost` and bare IP addresses, a defence against DNS rebinding. `--host NAME` adds a name, such as `lastbook.local` or the name a reverse proxy uses. Repeat it for more names.
 
 ### Development
 
@@ -89,7 +101,8 @@ lbx/fetch.py     get a library from Lastbook's manifest, check its SHA-256, unpa
 lbx/manifest.py  read Lastbook's manifest-v1.json
 lbx/check.py     check a data folder against its pack-manifest.tsv
 lbx/serve.py     start upstream server.py with lastbook-kit's defaults
-lbx/overlay/     small patches where upstream's defaults get in the way
+lbx/overlay/     small patches where upstream's defaults get in the way: state folder,
+                 no setup/update API, proxied requests, host names, no access key
 tests/           run against Lastbook's real Small library
 ```
 

@@ -12,7 +12,7 @@ import zipfile
 from pathlib import Path
 
 FILES = {
-    'library-data/catalog.json': b'{"records": []}\n',
+    'library-data/catalog.json': b'[]\n',
     'library-data/documents/guide.pdf': os.urandom(200_000),
     'library-data/videos/first-aid/How to: stop bleeding [abc123].mp4': os.urandom(300_000),
     'derived/geo/places.sqlite': os.urandom(50_000),
