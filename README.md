@@ -83,13 +83,15 @@ Upstream answers only to `localhost` and bare IP addresses, a defence against DN
 ### Development
 
 ```sh
-just test        # all tests. The Small-library ones skip unless Small is in the data home
-just test-fast   # only the tests that need no library
-just fetch       # get the Small library into the data home
-just serve       # serve it
+just test            # all tests. The Small-library ones skip unless Small is in the data home
+just test-fast       # only the tests that need no library
+just ui              # drive the web interface on Small in Chromium; screenshots in artifacts/screenshots/
+just fetch           # get the Small library into the data home
+just serve           # serve it
+just bump-upstream <tag>   # move the upstream pin and run everything against it
 ```
 
-Fetch and check are tested against a tiny library on a local server, so those tests need no network.
+Fetch, check and the serve overlays are tested against a tiny library on loopback, so those tests need no network and run in CI. The tests in `tests/test_small.py` and `just ui` run the real server on the real Small library. Outside the Nix dev shell, `just ui` needs Node and `npx playwright-core install chromium`, or `CHROME=<path to Chromium>`.
 
 ## How it works
 
@@ -103,7 +105,8 @@ lbx/check.py     check a data folder against its pack-manifest.tsv
 lbx/serve.py     start upstream server.py with lastbook-kit's defaults
 lbx/overlay/     small patches where upstream's defaults get in the way: state folder,
                  no setup/update API, proxied requests, host names, no access key
-tests/           run against Lastbook's real Small library
+tests/           a tiny library for fast tests, and the real Small library (test_small.py)
+tests/ui/        drives the web interface in Chromium and keeps screenshots
 ```
 
 Lastbook moves fast. The pin moves forward only when the tests pass.
@@ -118,11 +121,13 @@ git clone --recurse-submodules https://github.com/jonocodes/lastbook-kit.git
 git submodule update --init
 ```
 
-To move the pin, do it on purpose, one release at a time:
+To move the pin, do it on purpose, one release at a time, with Small in the data home:
 
-1. `git -C upstream fetch --tags && git -C upstream checkout <tag>`
-2. Run the full test suite, including the tests against the real Small library.
-3. If they pass, commit the new pin (`git add upstream`) and update the version above. If they don't, fix the overlay or stay where you are.
+```sh
+just bump-upstream v1.1.17
+```
+
+That checks out the tag, updates the version above, and runs every test plus `just ui` against the real Small library. Small must be there, or the tests fail rather than skip. If everything passes, look at the screenshots and commit `upstream` and `README.md`. If anything fails, fix the overlay, or go back with `git checkout README.md && git submodule update`.
 
 Upstream isn't bumped automatically. It merged about 150 PRs in its first 10 days.
 

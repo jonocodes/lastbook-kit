@@ -78,8 +78,10 @@
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
-          packages = [ (pythonFor pkgs) pkgs.uv pkgs.just ];
+          packages = [ (pythonFor pkgs) pkgs.uv pkgs.just pkgs.nodejs ];
           env = {
+            # `just ui` drives this Chromium. Playwright's own downloads don't run on NixOS.
+            CHROME = "${pkgs.chromium}/bin/chromium";
             UV_PYTHON = "${pythonFor pkgs}/bin/python3";
             UV_PYTHON_DOWNLOADS = "never";
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (wheelLibs pkgs);
