@@ -28,7 +28,13 @@ def main(argv=None):
     s = sub.add_parser('serve', help="serve a data folder to a browser with upstream's server.py")
     s.add_argument('data', nargs='?', help='the data folder (LastbookData/). Default: the Small library in the data home')
     s.add_argument('--port', type=int, default=8890)
-    s.add_argument('--lan', action='store_true', help='also serve other devices on this network, with an access link')
+    s.add_argument('--lan', action='store_true', help='also serve other devices on this network (binds 0.0.0.0). They need the access link')
+    s.add_argument('--bind', metavar='ADDR', help='listen on this IPv4 address (default 127.0.0.1, or 0.0.0.0 with --lan)')
+    s.add_argument('--no-key', action='store_true', help='other devices need no access link. Only on a network you trust')
+    s.add_argument('--host', action='append', default=[], metavar='NAME',
+                   help='also answer under this host name, e.g. lastbook.local or a reverse proxy\'s name. Repeatable')
+    s.add_argument('--state', metavar='DIR', help="where the server keeps page images, map tiles and its index "
+                   "(default: ~/.local/state/lastbook-kit/serve/…). <data>/derived gives upstream's behaviour")
     s.add_argument('--no-index', action='store_true', help='do not update the semantic index in the background')
 
     a = ap.parse_args(argv)
@@ -44,7 +50,8 @@ def main(argv=None):
             return 0 if r.ok else 1
         elif a.command == 'serve':
             from lbx import serve
-            serve.run(a.data or paths.library('small'), port=a.port, lan=a.lan, no_index=a.no_index)
+            serve.run(a.data or paths.library('small'), port=a.port, lan=a.lan, bind=a.bind, hosts=a.host,
+                      no_key=a.no_key, state=a.state, no_index=a.no_index)
     except Problem as e:
         print(f'lbx: {e}', file=sys.stderr)
         return 2
