@@ -33,7 +33,10 @@ def small():
     """The real Small library's data folder: <data home>/small/LastbookData (see lbx.paths)."""
     lib = paths.library('small')
     if not (lib / 'library-data').is_dir():
-        pytest.skip(f'no Small library at {lib}. Get it with: lbx fetch small')
+        why = f'no Small library at {lib}. Get it with: lbx fetch small'
+        if os.environ.get('LBX_REQUIRE_SMALL'):
+            pytest.fail(why)        # bumping the pin: these tests must run, not skip
+        pytest.skip(why)
     return lib
 
 
