@@ -156,3 +156,16 @@ def test_cli(tmp_path, pack):
     assert r.returncode == 0, r.stderr
     assert 'library is ready' in r.stdout
     assert 'lbx serve' in r.stdout
+
+
+def test_does_not_switch_in_a_library_that_fails_its_own_manifest(tmp_path):
+    lib = fakepack.make_library(tmp_path / 'src')
+    (lib / 'library-data' / 'catalog.json').write_text('{"changed after the manifest was written": true}')
+    data = fakepack.zip_library(lib, tmp_path / ZIP).read_bytes()
+    dest = tmp_path / 'dest'
+    with fakepack.Server({ZIP: data}) as s:
+        m = write_manifest(tmp_path, s, (data, lib, fakepack.installed_bytes(lib)))
+        with pytest.raises(Problem, match='does not match its pack-manifest.tsv'):
+            fetch.fetch('small', dest=dest, manifest_source=m, say=quiet)
+    assert not (dest / 'LastbookData').exists()
+    assert (dest / 'LastbookData.unpack').is_dir()

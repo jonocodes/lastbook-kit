@@ -20,6 +20,11 @@ def main(argv=None):
     f.add_argument('--download-only', action='store_true', help='download and check the zip, but do not unpack it')
     f.add_argument('--manifest', help=f'manifest URL or file (default: {manifest.URL}, or LBX_MANIFEST)')
 
+    c = sub.add_parser('check', help='check a data folder against its pack-manifest.tsv')
+    c.add_argument('data', nargs='?', help='the data folder (LastbookData/). Default: the Small library in the data home')
+    c.add_argument('--quick', action='store_true', help='check sizes only, not SHA-256')
+    c.add_argument('--all', action='store_true', help='list every problem, not the first 20 of each kind')
+
     s = sub.add_parser('serve', help="serve a data folder to a browser with upstream's server.py")
     s.add_argument('data', nargs='?', help='the data folder (LastbookData/). Default: the Small library in the data home')
     s.add_argument('--port', type=int, default=8890)
@@ -32,6 +37,11 @@ def main(argv=None):
             from lbx import fetch
             fetch.fetch(a.pack, dest=a.dest, zips=a.zip, keep_zip=a.keep_zip,
                         download_only=a.download_only, manifest_source=a.manifest)
+        elif a.command == 'check':
+            from lbx import check
+            r = check.check(a.data or paths.library('small'), quick=a.quick)
+            check.report(r, limit=0 if a.all else 20)
+            return 0 if r.ok else 1
         elif a.command == 'serve':
             from lbx import serve
             serve.run(a.data or paths.library('small'), port=a.port, lan=a.lan, no_index=a.no_index)

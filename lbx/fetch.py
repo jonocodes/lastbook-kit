@@ -20,7 +20,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from lbx import manifest, paths
+from lbx import check, manifest, paths
 from lbx.errors import Problem
 
 DATA_NAME = 'LastbookData'
@@ -330,6 +330,10 @@ def fetch(pack_id, dest=None, zips=(), keep_zip=False, download_only=False, mani
     if zips:
         free_space_ok(folder, pack.installed_bytes)
     new = unpack([p for p, _ in pairs], staging, pack.installed_bytes, say)
+    result = check.check(new, quick=True)       # the zip's SHA-256 already vouches for the bytes
+    if not result.ok:
+        check.report(result, say)
+        raise Problem(f'the unpacked library does not match its {check.MANIFEST}. It was left in {staging}.')
     old = switch(new, target)
     staging.rmdir()
     if not zips and not keep_zip:
