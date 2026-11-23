@@ -38,6 +38,24 @@ tests/           run against Lastbook's real Small library
 
 Lastbook moves fast. The pin moves forward only when the tests pass.
 
+### The upstream pin
+
+`upstream/` is a git submodule, pinned to Lastbook `v1.1.16` (`5aec1667`). Clone with it:
+
+```sh
+git clone --recurse-submodules https://github.com/jonocodes/lastbook-kit.git
+# or, in an existing clone:
+git submodule update --init
+```
+
+To move the pin, do it on purpose, one release at a time:
+
+1. `git -C upstream fetch --tags && git -C upstream checkout <tag>`
+2. Run the full test suite, including the tests against the real Small library.
+3. If they pass, commit the new pin (`git add upstream`) and update the version above. If they don't, fix the overlay or stay where you are.
+
+Upstream isn't bumped automatically. It merged about 150 PRs in its first 10 days.
+
 A rewrite of the backend over Lastbook's data files is possible, since all of it is plain SQLite plus Kiwix ZIM files. It's parked until the thin layer proves too thin. See [docs/findings.md](docs/findings.md).
 
 ## The data
