@@ -5,8 +5,10 @@
   - No setup or update API, and no local AI: Chat lists the best pages.
 """
 import hashlib
+import importlib
 import ipaddress
 import os
+import re
 import secrets
 import socket
 import sys
@@ -16,6 +18,15 @@ from lbx import overlay, upstream
 from lbx.errors import Problem
 
 LOCAL = '127.0.0.1'
+
+# Compiled packages upstream's server imports only when a page needs them. If one can't load, the server
+# still starts and those pages fail one request at a time, so check before starting.
+NEEDED = {
+    'libzim': 'encyclopedias',
+    'numpy': 'PDF page images',
+    'pypdfium2': 'PDF page images',
+    'bs4': 'saved web pages',
+}
 
 
 class NotALibrary(Problem):
@@ -27,6 +38,32 @@ def data_folder(path) -> Path:
     if not (path / 'library-data').is_dir():
         raise NotALibrary(f'{path} is not a Lastbook data folder: it has no library-data/ folder.')
     return path
+
+
+def on_nixos():
+    return os.path.exists('/etc/NIXOS')
+
+
+def preflight():
+    """Refuse to start if a compiled package can't load, and say what it would break."""
+    broken = []
+    for module, used_for in NEEDED.items():
+        try:
+            importlib.import_module(module)
+        except ImportError as e:
+            text = str(e)
+            missing = re.search(r'\S+\.so[.\d]*: cannot open shared object file', text)
+            lines = [x.strip() for x in text.splitlines() if x.strip()]
+            reason = missing.group(0) if missing else (lines[0] if lines else type(e).__name__)
+            broken.append(f'  {module} ({used_for}): {reason}')
+    if not broken:
+        return
+    if on_nixos() and not os.environ.get('IN_NIX_SHELL'):
+        fix = ('On NixOS the PyPI packages need libraries from the dev shell: run `nix develop` '
+               '(or `direnv allow`) first, or use the Nix package (see the README).')
+    else:
+        fix = 'Reinstall them with `uv sync`.'
+    raise Problem('some packages the server needs cannot load:\n' + '\n'.join(broken) + '\n' + fix)
 
 
 def state_folder(data: Path, state=None) -> Path:
@@ -73,6 +110,7 @@ def this_computers_address():
 
 def run(data, port=8890, lan=False, bind=None, hosts=(), no_key=False, state=None, no_index=False, say=print):
     data = data_folder(data)
+    preflight()
     bind = bind or ('0.0.0.0' if lan else LOCAL)
     try:
         ipaddress.IPv4Address(bind)

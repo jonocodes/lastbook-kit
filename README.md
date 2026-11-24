@@ -34,7 +34,7 @@ uv run lbx fetch small      # download (7.7 GB), check and unpack the Small libr
 uv run lbx serve            # serve it at http://127.0.0.1:8890/
 ```
 
-`uv run` installs everything on first use. On NixOS, use the dev shell below, which puts the libraries the PyPI wheels expect on the library path.
+`uv run` installs everything on first use. On NixOS, the PyPI wheels need libraries from the dev shell below. The `just` recipes enter it themselves. For `uv run`, start `nix develop` (or `direnv allow`) first. Without it, `lbx serve` refuses to start and names what can't load, rather than serving a library whose PDF pages and encyclopedias fail.
 
 **With Nix** (Linux x86_64 and aarch64):
 

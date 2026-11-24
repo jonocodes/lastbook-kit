@@ -1,27 +1,32 @@
-# lastbook-kit. Run `nix develop` (or `direnv allow`) first on NixOS.
+# lastbook-kit.
+#
+# On NixOS the PyPI wheels need libraries from the Nix dev shell. Outside it, recipes enter it themselves.
+nixos := path_exists("/etc/NIXOS")
+in_shell := env("IN_NIX_SHELL", "")
+uv := if nixos == "true" { if in_shell == "" { "nix develop --command uv" } else { "uv" } } else { "uv" }
 
 default:
     @just --list
 
 # Install the Python environment
 sync:
-    uv sync
+    {{uv}} sync
 
 # All tests. The Small-library ones skip unless Small is in the data home
 test *args:
-    uv run pytest {{args}}
+    {{uv}} run pytest {{args}}
 
 # Only the fast tests
 test-fast *args:
-    uv run pytest -m "not small" {{args}}
+    {{uv}} run pytest -m "not small" {{args}}
 
 # Serve a data folder (default: the Small library in the data home)
 serve *args:
-    uv run lbx serve {{args}}
+    {{uv}} run lbx serve {{args}}
 
 # Get a library into the data home (small, medium or all)
 fetch pack="small" *args:
-    uv run lbx fetch {{pack}} {{args}}
+    {{uv}} run lbx fetch {{pack}} {{args}}
 
 # Build the Nix package
 nix-build:
@@ -31,6 +36,7 @@ nix-build:
 ui:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ "{{nixos}}" = true ] && [ -z "{{in_shell}}" ]; then exec nix develop --command just ui; fi
     (cd tests/ui && npm ci --silent --no-audit --no-fund)
     state=$(mktemp -d)
     port=$(uv run python -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -47,6 +53,7 @@ ui:
 bump-upstream tag:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ "{{nixos}}" = true ] && [ -z "{{in_shell}}" ]; then exec nix develop --command just bump-upstream "{{tag}}"; fi
     git -C upstream fetch --tags --quiet
     git -C upstream checkout --quiet "{{tag}}"
     rev=$(git -C upstream rev-parse --short=8 HEAD)

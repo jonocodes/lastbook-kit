@@ -97,3 +97,29 @@ def test_no_key_lets_other_devices_in(lib, tmp_path):
 def test_bind_takes_an_address(lib):
     r = run_lbx('serve', lib, '--bind', 'lastbook.local')
     assert r.returncode == 2 and 'IPv4 address' in r.stderr
+
+
+def test_preflight_passes_when_the_compiled_packages_load():
+    from lbx import serve
+    serve.preflight()
+
+
+def test_preflight_names_what_cannot_load_and_what_it_breaks(monkeypatch):
+    from lbx import serve
+    from lbx.errors import Problem
+    monkeypatch.setattr(serve, 'NEEDED', {'numpy': 'PDF page images', 'no_such_module_xyz': 'encyclopedias'})
+    with pytest.raises(Problem) as e:
+        serve.preflight()
+    msg = str(e.value)
+    assert 'no_such_module_xyz' in msg and 'encyclopedias' in msg
+    assert 'numpy' not in msg.split('\n', 1)[1]          # only what failed is listed
+
+
+def test_preflight_on_nixos_points_at_the_dev_shell(monkeypatch):
+    from lbx import serve
+    from lbx.errors import Problem
+    monkeypatch.setattr(serve, 'NEEDED', {'no_such_module_xyz': 'encyclopedias'})
+    monkeypatch.setattr(serve, 'on_nixos', lambda: True)
+    monkeypatch.delenv('IN_NIX_SHELL', raising=False)
+    with pytest.raises(Problem, match='nix develop'):
+        serve.preflight()
